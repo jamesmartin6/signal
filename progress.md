@@ -39,8 +39,17 @@ working commits, not one giant commit at the end).
   (frontend) + SQLite. Call this out plainly in the README rather than
   claiming `docker compose up` was tested.
 - **Python packaging:** plain `venv` + `pip` + `pyproject.toml`. No
-  poetry/uv available. venv on this machine uses `bin/` not `Scripts/`
-  (msys2/git-bash Python, not a WinPython layout) — `./backend/.venv/bin/python`.
+  poetry/uv available. **Do not use the `python` on PATH in git-bash** — it
+  resolves to msys2's `C:/msys64/ucrt64/bin/python.exe`, which reports
+  platform tag `mingw_x86_64_ucrt_gnu`. PyPI has no wheels for that ABI, so
+  installing anything with compiled deps (pydantic-core, jiter, etc.) tries
+  to build from source and fails without a Rust toolchain. Instead use the
+  standard CPython already installed at
+  `C:\Users\James\AppData\Local\Programs\Python312-taskflow\python.exe`
+  (platform tag `win-amd64`, leftover from an earlier unrelated project on
+  this machine, reused here rather than installing a duplicate) to create
+  `backend/.venv`. That venv uses the normal Windows layout —
+  `backend/.venv/Scripts/python.exe`, not `bin/`.
 - **Background jobs:** FastAPI `BackgroundTasks`, per spec (no Celery/Redis).
 - **Frontend:** Vite + React + TypeScript, plain CSS (no UI framework),
   polling via `setInterval`, no WebSockets.
@@ -60,17 +69,31 @@ working commits, not one giant commit at the end).
 - [x] `progress.md` (this file)
 - [ ] Initial commit
 
-## Phase 1 — Backend skeleton & data layer
-- [ ] `backend/pyproject.toml` with deps (fastapi, uvicorn, sqlalchemy, alembic, pydantic v2, anthropic, python-multipart, psycopg (optional, for postgres), pytest, httpx)
-- [ ] `backend/app/config.py` — Settings (DATABASE_URL, ANTHROPIC_API_KEY, etc.)
-- [ ] `backend/app/db/models.py` — Lead, PipelineStageResult, EvalRun
-- [ ] `backend/app/db/session.py` — engine/session
-- [ ] `backend/app/main.py` — FastAPI app, `/health`, CORS for frontend dev
-- [ ] Alembic init + initial migration for the 3 tables
-- [ ] `backend/app/api/leads.py` — POST /leads/upload, GET /leads, GET /leads/{id}
-- [ ] CSV parsing logic + unit tests (malformed rows, missing columns, empty file)
-- [ ] Manual verification: run uvicorn locally, curl upload + list + detail
-- [ ] Commit
+## Phase 1 — Backend skeleton & data layer — DONE
+- [x] `backend/pyproject.toml` with deps (fastapi, uvicorn, sqlalchemy, alembic, pydantic v2, anthropic, python-multipart, psycopg (optional, for postgres), pytest, httpx)
+- [x] `backend/app/config.py` — Settings (DATABASE_URL, ANTHROPIC_API_KEY, etc.)
+- [x] `backend/app/db/models.py` — Lead, PipelineStageResult, EvalRun (+ `seq` monotonic counter column — see note below)
+- [x] `backend/app/db/session.py` — engine/session
+- [x] `backend/app/main.py` — FastAPI app, `/health`, CORS for frontend dev
+- [x] Alembic init + initial migration for the 3 tables
+- [x] `backend/app/api/leads.py` — POST /leads/upload, GET /leads, GET /leads/{id}
+- [x] CSV parsing logic (`app/ingest.py`) + unit tests (malformed rows, missing columns, empty file, header-only, ragged rows, blank lines)
+- [x] Manual verification: ran uvicorn locally, curl upload (3 created/1 skipped) + list + detail + 404 — all correct
+- [x] Commit
+
+**Bug caught during manual verification (real, not hypothetical):** all leads
+created in one upload batch got the *exact same* `created_at` timestamp
+(confirmed live: `"2026-08-08T22:06:42.114194"` on all 3 rows). Sorting
+`GET /leads` by `created_at` would have tie-broken on random UUID, scrambling
+upload order in the UI. Fixed by adding `Lead.seq`, a process-local monotonic
+counter (`itertools.count`, reseeded from `MAX(seq)` in the DB at app
+startup in `main.py`'s lifespan so restarts against a persisted DB never
+hand out colliding values). `GET /leads` now orders by `seq` only.
+
+Env quirk hit and resolved: git-bash's `curl.exe -F file=@/c/path/...`
+silently fails (exit 26) because MSYS's path-mangling doesn't rewrite paths
+embedded after `@` inside a larger arg — use a `cygpath -w` converted
+Windows-style path for any future curl file-upload testing.
 
 ## Phase 2 — Extraction stage
 - [ ] `backend/app/pipeline/schemas.py` — ExtractedProfile
