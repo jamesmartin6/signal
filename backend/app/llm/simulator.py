@@ -40,7 +40,7 @@ _EXEC_KEYWORDS = [
     "chief marketing", "chief product", "chief", "ceo", "cto", "cfo", "coo", "cmo", "cpo",
     "vice president", "vp", "president", "founder", "co-founder", "head of", "owner",
 ]
-_SENIOR_KEYWORDS = ["senior", "sr.", "lead", "principal", "staff", "director", "manager"]
+_SENIOR_KEYWORDS = ["senior", "sr.", "lead", "principal", "staff", "distinguished", "director", "manager"]
 _JUNIOR_KEYWORDS = ["junior", "jr.", "intern", "entry-level", "entry level", "associate"]
 
 INDUSTRY_KEYWORDS: list[tuple[str, list[str]]] = [

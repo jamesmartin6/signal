@@ -166,14 +166,35 @@ Principal-Software-Engineer trace classifies as `technical` under
 `classify_v2` (the pipeline's default) — the exact case classify_v1 gets
 wrong.
 
-## Phase 4 — Evals
-- [ ] `backend/app/evals/cases/classify_cases.json` — ~20 hand-labeled cases incl. edge cases
-- [ ] `backend/app/evals/run_eval.py` — CLI, scores a prompt version, writes eval_runs row
-- [ ] `backend/app/api/evals.py` — GET /evals
-- [ ] Actually run classify_v1 and classify_v2 against the eval set; record real pass rates
-- [ ] Confirm at least one case v1 fails and v2 fixes
-- [ ] Put the real numbers into README (Phase 6)
-- [ ] Commit
+## Phase 4 — Evals — DONE
+- [x] `backend/app/evals/cases/classify_cases.json` — 22 hand-labeled cases (7 decision_maker, 6 technical, 6 not_relevant... see file; includes 3 senior-IC edge cases + 2 deliberately ambiguous cases with `notes` fields explaining the judgment call)
+- [x] `backend/app/evals/run_eval.py` — CLI (`python -m app.evals.run_eval --prompt-version classify_v1|v2`), scores via the pure `extract_profile`/`classify_profile` functions (no DB writes except the final EvalRun row), prints pass/fail detail, writes eval_runs row
+- [x] `backend/app/api/evals.py` — GET /evals (already anticipated by a try/except ImportError in main.py back in Phase 1)
+- [x] `tests/test_run_eval.py`, `tests/test_evals_api.py`
+- [x] Actually ran both prompt versions against the (simulated-path) eval set — see real numbers below
+- [x] Confirmed: v1 fails all 3 senior-IC edge cases (Principal/Staff/Distinguished Engineer), v2 fixes all 3
+- [x] Commit
+
+### Real eval numbers (simulated-LLM path — no ANTHROPIC_API_KEY in this environment)
+
+```
+classify_v1: 19/22 passed (86.4%)
+classify_v2: 22/22 passed (100.0%)
+```
+
+classify_v1's 3 failures were all the same root cause: `"Seniority 'senior'
+treated as decision-making authority (v1 logic)"` — Principal/Staff/
+Distinguished Engineer, all senior-sounding IC titles, misclassified as
+`decision_maker`. classify_v2 fixed all 3 by checking role function before
+seniority. These numbers go straight into the README (Phase 6) as the
+project's headline "before/after" metric.
+
+Note for anyone who later adds a real `ANTHROPIC_API_KEY`: re-run both
+`python -m app.evals.run_eval --prompt-version classify_v1` and `...v2` —
+the real-LLM numbers will likely differ from the simulated ones above
+(a real model may handle some of the not_relevant/ambiguous cases
+differently) and should replace them in the README if so, with an honest
+note about which path (simulated vs. real) produced which numbers.
 
 ## Phase 5 — Frontend
 - [ ] Vite + React + TS scaffold (`npm create vite`)

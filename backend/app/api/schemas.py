@@ -52,3 +52,15 @@ class UploadResponse(BaseModel):
     skipped: int
     skipped_rows: list[SkippedRowOut]
     lead_ids: list[uuid.UUID]
+
+
+class EvalRunOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    prompt_version: str
+    stage: PipelineStage
+    total_cases: int
+    passed_cases: int
+    pass_rate: float
+    created_at: datetime

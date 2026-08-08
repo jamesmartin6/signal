@@ -1,0 +1,96 @@
+[
+  {
+    "bio": "Rachel Kim, VP of Sales at Northstar Software, closing enterprise deals.",
+    "expected_category": "decision_maker"
+  },
+  {
+    "bio": "Marcus Lee, Chief Executive Officer at Bridgeway Health, a healthcare startup.",
+    "expected_category": "decision_maker"
+  },
+  {
+    "bio": "Elena Petrova, Director of Product at Marlin Analytics.",
+    "expected_category": "decision_maker"
+  },
+  {
+    "bio": "Sam Okafor, Founder of Trailhead Robotics, an industrial automation company.",
+    "expected_category": "decision_maker"
+  },
+  {
+    "bio": "Priya Shah, Chief Marketing Officer at Northwind Retail, a national apparel chain.",
+    "expected_category": "decision_maker"
+  },
+  {
+    "bio": "Ethan Brooks, Head of Engineering at Trellis Systems, overseeing all product development.",
+    "expected_category": "decision_maker",
+    "notes": "Non-technical function despite the word 'Engineering' in the title — tests that the technical-keyword check doesn't false-positive on the department name."
+  },
+  {
+    "bio": "Jordan Reyes, Senior Product Manager at Anchor Systems, overseeing the roadmap.",
+    "expected_category": "decision_maker"
+  },
+  {
+    "bio": "Grace Liu is a Software Engineer at Beacon Systems working on billing infrastructure.",
+    "expected_category": "technical"
+  },
+  {
+    "bio": "David Osei, Data Scientist at Vector Analytics, building fraud models.",
+    "expected_category": "technical"
+  },
+  {
+    "bio": "Nina Alvarez is a DevOps Engineer at CloudPeak Systems.",
+    "expected_category": "technical"
+  },
+  {
+    "bio": "Ravi Chandran, Software Architect at Fintorch, designing payment systems.",
+    "expected_category": "technical"
+  },
+  {
+    "bio": "Tom Becker is a Data Engineer at Lumen Analytics building ETL pipelines.",
+    "expected_category": "technical"
+  },
+  {
+    "bio": "Wendy Zhu, Principal Software Engineer at Gamma Systems, working on distributed systems.",
+    "expected_category": "technical",
+    "notes": "Edge case: senior-sounding IC title. classify_v1 checks seniority before function and misclassifies this as decision_maker; classify_v2 checks function first and gets it right."
+  },
+  {
+    "bio": "Omar Farouk, Staff Engineer at Vertex Cloud, leading reliability engineering.",
+    "expected_category": "technical",
+    "notes": "Same edge case as Wendy Zhu: 'Staff' reads as senior/exec seniority, but the role is a hands-on IC, not a decision maker."
+  },
+  {
+    "bio": "Julia Bennett, Distinguished Engineer at Solace Systems, working on core infrastructure.",
+    "expected_category": "technical",
+    "notes": "Same edge case again with a third common senior-IC title ('Distinguished Engineer'), to show the fix isn't a one-off special case."
+  },
+  {
+    "bio": "Hannah Brooks, Marketing Intern at BrightPath Media, focused on campaigns.",
+    "expected_category": "not_relevant"
+  },
+  {
+    "bio": "Carlos Mendes, Sales Associate at Union Retail Group.",
+    "expected_category": "not_relevant"
+  },
+  {
+    "bio": "Lily Chen, HR Coordinator at Fenwick Logistics.",
+    "expected_category": "not_relevant"
+  },
+  {
+    "bio": "Derek Ford, Junior Accountant at Palisade Group.",
+    "expected_category": "not_relevant"
+  },
+  {
+    "bio": "Aisha Bello, Customer Support Representative at Zenith Software.",
+    "expected_category": "not_relevant"
+  },
+  {
+    "bio": "Morgan Ellis, Engineering Manager at Ridgeline Data, leading a team of 8 engineers.",
+    "expected_category": "decision_maker",
+    "notes": "Deliberately ambiguous: an engineering manager has some hiring/budget influence but is arguably closer to a technical lead than a classic decision maker. Labeled decision_maker as the best single answer; not expected to be an easy 100%-confidence case for either prompt version."
+  },
+  {
+    "bio": "Sofia Marin, Technical Program Manager at Callisto Robotics, coordinating engineering releases.",
+    "expected_category": "decision_maker",
+    "notes": "Deliberately ambiguous: a TPM function straddles technical and program-management; labeled decision_maker as the best single answer given program/roadmap authority."
+  }
+]
