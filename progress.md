@@ -95,13 +95,25 @@ silently fails (exit 26) because MSYS's path-mangling doesn't rewrite paths
 embedded after `@` inside a larger arg — use a `cygpath -w` converted
 Windows-style path for any future curl file-upload testing.
 
-## Phase 2 — Extraction stage
-- [ ] `backend/app/pipeline/schemas.py` — ExtractedProfile
-- [ ] `backend/app/llm/client.py` — LLMClient interface, AnthropicLLMClient, SimulatedLLMClient, retry-on-validation-failure logic
-- [ ] `backend/app/pipeline/prompts/extract_v1.py`
-- [ ] `backend/app/pipeline/extract.py` — run_extract(), writes pipeline_stage_results row
-- [ ] Unit tests: valid response, invalid-then-valid-on-retry, invalid-twice (failure path) — mocked LLM client
-- [ ] Commit
+## Phase 2 — Extraction stage — DONE
+- [x] `backend/app/pipeline/schemas.py` — ExtractedProfile (+ ClassificationResult stub for Phase 3)
+- [x] `backend/app/llm/client.py` — LLMClient interface, AnthropicLLMClient, retry-on-validation-failure logic (`generate_structured`)
+- [x] `backend/app/llm/simulator.py` — SimulatedLLMClient, the zero-config fallback (see Locked-in decisions). Extraction heuristics: regex title/company split (`is a/an X at Y` and `, X at Y` patterns), keyword-based seniority + industry inference.
+- [x] `backend/app/pipeline/prompts/extract_v1.py` — few-shot prompt, `[prompt_version=...]` marker convention (lets the simulator dispatch on which stage/version a prompt is for without a separate out-of-band signal)
+- [x] `backend/app/pipeline/extract.py` — run_extract(), writes pipeline_stage_results row, advances lead.status extracting→classifying (or →failed)
+- [x] Unit tests (`tests/test_extract.py`, `tests/fakes.py::FakeLLMClient`): valid response, invalid-then-valid-on-retry, invalid-twice (failure path)
+- [x] `tests/test_llm_simulator.py` — heuristic unit tests
+- [x] `tests/test_extract_e2e_simulated.py` — real (non-mocked) run through 5 sample bios, checks Phase 2's "≥4/5 without retry" bar (met: 5/5, since the simulator is schema-safe by construction — the real signal is the per-bio seniority/industry assertions)
+- [x] `tests/test_extract_real_api.py` — opt-in real Anthropic API integration test, skipped unless `RUN_REAL_LLM_TESTS=1` and `ANTHROPIC_API_KEY` are both set
+- [x] Commit
+
+**Bug caught during testing:** the simulator's industry keyword list had
+`"media"` and `"marketing"` as generic industry keywords, which
+false-matched job-function phrasing ("Marketing Intern", "social media
+campaigns") that says nothing about the employer's actual industry. Fixed
+by requiring more specific compound phrases (`"marketing agency"`,
+`"advertising agency"`, `"entertainment"`, `"streaming"`, etc.) instead of
+bare `"media"`/`"marketing"`.
 
 ## Phase 3 — Classify / Enrich / Route + orchestration
 - [ ] `backend/app/pipeline/schemas.py` additions — ClassificationResult
