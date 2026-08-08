@@ -196,18 +196,44 @@ the real-LLM numbers will likely differ from the simulated ones above
 differently) and should replace them in the README if so, with an honest
 note about which path (simulated vs. real) produced which numbers.
 
-## Phase 5 — Frontend
-- [ ] Vite + React + TS scaffold (`npm create vite`)
-- [ ] `frontend/src/types/lead.ts` mirroring backend schemas
-- [ ] `frontend/src/api/client.ts` typed fetch wrapper
-- [ ] `UploadForm.tsx`
-- [ ] `useLeadsPolling.ts` + `LeadsTable.tsx`
-- [ ] `LeadTrace.tsx`
-- [ ] `EvalDashboard.tsx`
-- [ ] `App.tsx` wiring + minimal CSS
-- [ ] `npm run build` passes (tsc + vite build)
-- [ ] End-to-end manual check against running backend (curl-level + served bundle)
-- [ ] Commit
+## Phase 5 — Frontend — DONE
+- [x] Vite + React 19 + TS 6 scaffold (`npm create vite@latest . -- --template react-ts`), standard Windows CPython not needed here — Node v22.14/npm 10.9.2 already worked fine
+- [x] `frontend/src/types/lead.ts` mirroring backend Pydantic schemas exactly (verified field-by-field against `app/api/schemas.py`)
+- [x] `frontend/src/api/client.ts` typed fetch wrapper, `VITE_API_BASE_URL` env override (`.env.example`)
+- [x] `UploadForm.tsx` — file input, shows created/skipped counts + skip reasons
+- [x] `useLeadsPolling.ts` (polls GET /leads every 1.5s, exposes `refetch` so upload can force an immediate update instead of waiting for the next tick) + `LeadsTable.tsx`
+- [x] `LeadTrace.tsx` — also polls every 1.5s *while the selected lead is non-terminal*, so a trace fills in live as extract→classify→enrich→route complete, matching the build plan's "watch it move through a live-updating pipeline" goal (not just the leads list)
+- [x] `EvalDashboard.tsx` — simple CSS bar chart (no charting library, per spec's "keep styling minimal")
+- [x] `App.tsx` wiring + minimal CSS (light/dark aware via `prefers-color-scheme`)
+- [x] `npm run build` passes (tsc -b + vite build), `npm run lint` (oxlint) clean
+- [x] Commit
+
+**End-to-end verification performed (no GUI browser available in this
+environment — verified as thoroughly as possible without one):**
+- `npm run build` — full type-check + production build succeeds
+- Started backend (uvicorn :8000) and frontend (`npm run dev` :5173) together
+- Fetched the Vite dev server's HTML and the transformed `App.tsx` module
+  over HTTP to confirm the module graph compiles and serves correctly
+  (this doesn't confirm visual rendering, but does confirm zero
+  build/transform errors in every component file)
+- Verified CORS preflight succeeds for `Origin: http://localhost:5173`
+  against `POST /leads/upload` (was briefly broken during testing — see
+  bug note below)
+- Uploaded a real CSV with the frontend's origin header set and confirmed
+  `GET /leads`, `GET /leads/{id}`, and `GET /evals` response shapes match
+  the TypeScript interfaces in `types/lead.ts` field-for-field
+- **Not done: actual visual/interactive verification in a real browser.**
+  If something looks off visually, that's the first place to check.
+
+**Bug caught during Phase 5 verification (environment artifact, not an app
+bug, but worth recording):** two orphaned `vite` dev server processes from
+earlier testing were squatting on ports 5173/5174, which pushed a fresh
+`npm run dev` onto 5174 — a port not in the backend's `cors_origins`
+allowlist, so preflight failed with "Disallowed CORS origin". Not a code
+bug (a real dev environment wouldn't have stray processes), but confirms
+`app/config.py`'s `cors_origins` allowlist is doing its job correctly by
+rejecting an unexpected origin. Killed the stray processes and reverified
+cleanly on the correct port.
 
 ## Phase 6 — Logging, docs, polish
 - [ ] `backend/app/logging_config.py` — structured logs per pipeline stage call
