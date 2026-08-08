@@ -235,13 +235,19 @@ bug (a real dev environment wouldn't have stray processes), but confirms
 rejecting an unexpected origin. Killed the stray processes and reverified
 cleanly on the correct port.
 
-## Phase 6 — Logging, docs, polish
-- [ ] `backend/app/logging_config.py` — structured logs per pipeline stage call
-- [ ] `docker-compose.yml` — postgres + backend + frontend
-- [ ] Backend `Dockerfile`, frontend `Dockerfile`
-- [ ] `README.md` — architecture, quickstart (no-Docker path + Docker path), real eval numbers, screenshots/notes
-- [ ] Final full-repo sanity pass (fresh venv install + test run)
-- [ ] Commit
+## Phase 6 — Logging, docs, polish — DONE
+- [x] `backend/app/logging_config.py` — structured JSON logs per pipeline stage call (done back in Phase 1, verified still solid: lead_id, stage, prompt_version, latency_ms, success on every stage call)
+- [x] `docker-compose.yml` — postgres + backend + frontend; YAML-validated with `pyyaml` (Docker itself isn't installed in this sandbox, so `docker compose up` was never actually run — see honest caveat in README)
+- [x] `backend/Dockerfile` + `.dockerignore`, `frontend/Dockerfile` + `nginx.conf` + `.dockerignore`
+- [x] `.github/workflows/ci.yml` — GitHub Actions: backend pytest + frontend build/lint on push/PR (not in the original build plan, added because a green CI badge is real signal for a portfolio repo and costs nothing to add)
+- [x] `LICENSE` (MIT)
+- [x] `README.md` — architecture (mermaid diagram), why-this-exists framing, the real eval numbers front and center, LLM client design explanation (real vs. simulated), quickstart for both Docker and no-Docker paths, API table, repo structure, "what to actually look at" pointer list for reviewers
+- [x] Final full backend test suite run: **56 passed, 1 skipped** (the opt-in real-API test)
+- [x] Commit
+
+Deliberately did NOT rewrite/soften the "Docker wasn't tested here" caveat —
+it's true, it's a sandbox limitation not a code defect, and an honest
+caveat is worth more than a claim I can't back up.
 
 ## Publish
 - [ ] `gh repo create` (public, good description)
