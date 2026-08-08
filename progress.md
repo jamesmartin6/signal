@@ -249,11 +249,20 @@ Deliberately did NOT rewrite/soften the "Docker wasn't tested here" caveat —
 it's true, it's a sandbox limitation not a code defect, and an honest
 caveat is worth more than a claim I can't back up.
 
-## Publish
-- [ ] `gh repo create` (public, good description)
-- [ ] Push main
-- [ ] Verify README renders well on GitHub, repo has topics/description set
-- [ ] Final check of progress.md — mark everything done
+## Publish — DONE
+- [x] `gh repo create jamesmartin6/signal --public` with description
+- [x] Pushed `main` (7 commits, one per phase)
+- [x] Verified README renders correctly on GitHub; added topics (ai, llm, fastapi, react, typescript, anthropic, python, lead-generation)
+- [x] CI ran on the push and **passed both jobs** (backend pytest, frontend build+lint) on GitHub's actual runners — confirms the project works outside this dev sandbox too, not just locally
+- [x] Repo: https://github.com/jamesmartin6/signal
+
+## Status: PROJECT COMPLETE
+
+All 6 build-plan phases implemented, tested, and committed; repo is public
+on GitHub with a green CI badge. Nothing left pending. If resuming a
+future session anyway: there is nothing to resume — this was the last
+step. Check `git log --oneline` and the CI badge to confirm state hasn't
+regressed before assuming otherwise.
 
 ---
 
