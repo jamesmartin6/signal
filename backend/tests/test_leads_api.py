@@ -49,13 +49,16 @@ def test_upload_reports_skipped_rows(client):
 
 
 def test_list_leads_after_upload(client):
+    # TestClient runs BackgroundTasks to completion before the upload
+    # response returns, so by the time we list leads the pipeline has
+    # already run (against the simulated LLM client, no API key in tests).
     _upload(client)
     resp = client.get("/leads")
     assert resp.status_code == 200
     body = resp.json()
     assert body["total"] == 2
     assert len(body["items"]) == 2
-    assert body["items"][0]["status"] == "pending"
+    assert body["items"][0]["status"] == "done"
     assert body["items"][0]["raw_input"]["name"] == "Jane Doe"
 
 
@@ -75,7 +78,8 @@ def test_get_lead_detail(client):
     assert resp.status_code == 200
     body = resp.json()
     assert body["id"] == lead_id
-    assert body["stage_results"] == []
+    assert body["status"] == "done"
+    assert [r["stage"] for r in body["stage_results"]] == ["extract", "classify", "enrich", "route"]
 
 
 def test_get_lead_not_found(client):

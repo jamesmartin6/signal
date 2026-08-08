@@ -20,6 +20,7 @@ import json
 import re
 
 from app.llm.client import LLMClient
+from app.llm.keywords import matches_any_keyword
 
 _PROMPT_VERSION_RE = re.compile(r"\[prompt_version=(\S+?)\]")
 _BIO_RE = re.compile(r'Bio:\s*"""\s*(.*?)\s*"""', re.DOTALL)
@@ -37,12 +38,12 @@ _SEP_RE = re.compile(
 _EXEC_KEYWORDS = [
     "chief executive", "chief technology", "chief financial", "chief operating",
     "chief marketing", "chief product", "chief", "ceo", "cto", "cfo", "coo", "cmo", "cpo",
-    "vice president", "vp of", "vp,", "vp ", "president", "founder", "co-founder", "head of", "owner",
+    "vice president", "vp", "president", "founder", "co-founder", "head of", "owner",
 ]
 _SENIOR_KEYWORDS = ["senior", "sr.", "lead", "principal", "staff", "director", "manager"]
 _JUNIOR_KEYWORDS = ["junior", "jr.", "intern", "entry-level", "entry level", "associate"]
 
-_INDUSTRY_KEYWORDS: list[tuple[str, list[str]]] = [
+INDUSTRY_KEYWORDS: list[tuple[str, list[str]]] = [
     ("fintech", ["fintech", "banking", "payments", "financial services"]),
     ("healthcare", ["healthcare", "health tech", "medical", "biotech", "pharma"]),
     ("e-commerce", ["e-commerce", "ecommerce", "online marketplace", "online store"]),
@@ -106,19 +107,19 @@ def extract_title_company(bio: str) -> tuple[str, str]:
 
 def infer_seniority(title: str, bio: str) -> str:
     haystack = f"{title} {bio}".lower()
-    if any(kw in haystack for kw in _EXEC_KEYWORDS):
+    if matches_any_keyword(haystack, _EXEC_KEYWORDS):
         return "exec"
-    if any(kw in haystack for kw in _SENIOR_KEYWORDS):
+    if matches_any_keyword(haystack, _SENIOR_KEYWORDS):
         return "senior"
-    if any(kw in haystack for kw in _JUNIOR_KEYWORDS):
+    if matches_any_keyword(haystack, _JUNIOR_KEYWORDS):
         return "junior"
     return "mid"
 
 
 def infer_industry(bio: str) -> str | None:
     haystack = bio.lower()
-    for label, keywords in _INDUSTRY_KEYWORDS:
-        if any(kw in haystack for kw in keywords):
+    for label, keywords in INDUSTRY_KEYWORDS:
+        if matches_any_keyword(haystack, keywords):
             return label
     return None
 

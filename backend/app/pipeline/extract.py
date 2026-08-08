@@ -1,13 +1,21 @@
 from sqlalchemy.orm import Session
 
 from app.db.models import Lead, LeadStatus, PipelineStage, PipelineStageResult
-from app.llm.client import LLMClient, LLMOutputInvalidError, generate_structured
+from app.llm.client import LLMCallResult, LLMClient, LLMOutputInvalidError, generate_structured
 from app.logging_config import get_pipeline_logger
 from app.pipeline.errors import PipelineStageFailed
 from app.pipeline.prompts.extract_v1 import PROMPT_VERSION, build_prompt
 from app.pipeline.schemas import ExtractedProfile
 
 logger = get_pipeline_logger()
+
+
+def extract_profile(client: LLMClient, raw_input: dict) -> LLMCallResult:
+    """Pure LLM call: raw lead input -> validated ExtractedProfile. No DB
+    side effects, so it's reusable from the eval harness. May raise
+    LLMOutputInvalidError."""
+    system, user = build_prompt(raw_input)
+    return generate_structured(client, system=system, user=user, schema=ExtractedProfile)
 
 
 def run_extract(db: Session, lead: Lead, client: LLMClient) -> ExtractedProfile:

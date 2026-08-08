@@ -115,17 +115,56 @@ by requiring more specific compound phrases (`"marketing agency"`,
 `"advertising agency"`, `"entertainment"`, `"streaming"`, etc.) instead of
 bare `"media"`/`"marketing"`.
 
-## Phase 3 — Classify / Enrich / Route + orchestration
-- [ ] `backend/app/pipeline/schemas.py` additions — ClassificationResult
-- [ ] `backend/app/pipeline/prompts/classify_v1.py`
-- [ ] `backend/app/pipeline/classify.py`
-- [ ] Identify a real v1 weakness via testing/eval cases; write `classify_v2.py` fixing it
-- [ ] `backend/app/pipeline/enrich.py` — deterministic mock enrichment
-- [ ] `backend/app/pipeline/route.py` — pure business logic routing
-- [ ] `backend/app/pipeline/runner.py` — run_pipeline(lead_id) state machine, per-stage failure handling
-- [ ] Wire `run_pipeline` as BackgroundTask from POST /leads/upload
-- [ ] Integration test: 3 sample leads through full pipeline, assert status + 4 stage rows each
-- [ ] Commit
+## Phase 3 — Classify / Enrich / Route + orchestration — DONE
+- [x] `backend/app/pipeline/schemas.py` additions — ClassificationResult, EnrichmentResult, RouteResult
+- [x] `backend/app/pipeline/prompts/classify_v1.py` / `classify_v2.py` — real v1 weakness: v1's prompt says "senior/exec-level roles" are decision makers without distinguishing role function from seniority, so a "Principal Software Engineer" (senior IC, no purchasing authority) gets misclassified as decision_maker. v2 explicitly checks function (technical keywords) before seniority, with a few-shot example for exactly this case.
+- [x] `backend/app/llm/classify_simulator.py` — mirrors the same v1/v2 logic difference for the zero-config simulated path, so the offline demo tells the same honest story as the real-LLM path
+- [x] `backend/app/pipeline/classify.py` — run_classify() + pure `classify_profile()` (no DB) for eval-harness reuse
+- [x] `backend/app/pipeline/enrich.py` — no LLM; deterministic rules: slugified company domain, hash-bucketed company size, industry lookup-fallback when extraction left it null
+- [x] `backend/app/pipeline/route.py` — pure business logic; confidence < 0.6 always -> needs_review
+- [x] `backend/app/pipeline/runner.py` — run_pipeline(lead_id): extract->classify->enrich->route, catches PipelineStageFailed (stage already recorded it) and any unexpected exception (marks lead failed) so one bad lead can't crash a batch
+- [x] Wired `run_pipeline_background` as a BackgroundTask from POST /leads/upload (deferred import in leads.py, added back in Phase 1 in anticipation of this)
+- [x] `tests/test_pipeline_e2e.py` — 3 leads through the full real (simulated) pipeline, asserts status=done + exactly 4 stage rows each in order
+- [x] `tests/test_classify.py`, `tests/test_enrich.py`, `tests/test_route.py`, `tests/test_classify_simulator.py`
+- [x] Commit
+
+**Two real bugs caught during Phase 3 testing:**
+
+1. **Word-boundary keyword matching.** The simulator's keyword lists used
+   plain substring checks (`kw in haystack`), which silently broke on
+   real inputs: `"engineer"` matched inside `"Engineering"` (so "VP of
+   **Engineering**" was misclassified as `technical`, not
+   `decision_maker` — caught by
+   `test_both_versions_agree_on_unambiguous_decision_maker`), and the same
+   class of bug would have hit `"lead"` inside `"leadership"` and
+   `"intern"` inside `"international"`. Fixed with a shared
+   `app/llm/keywords.py::matches_any_keyword()` using `\b`-bounded regex,
+   applied to every keyword list in `simulator.py` and
+   `classify_simulator.py`.
+2. **Test DB architecture.** Once `runner.py` existed, `POST
+   /leads/upload`'s background task started actually running — and
+   FastAPI's BackgroundTasks execute inside `TestClient` synchronously,
+   before the HTTP response returns, on a session opened from the app's
+   *global* `SessionLocal`/`engine`. The old test setup used
+   `sqlite:///:memory:` for that global engine while `db_session`/`client`
+   fixtures pointed a *separate* in-memory DB (via dependency override) at
+   the request layer — two different, unconnected in-memory databases.
+   The background task's session saw an empty, table-less DB:
+   `OperationalError: no such table: leads`. Fixed by pointing
+   `DATABASE_URL` at a shared temp **file** for the whole test session
+   (see `tests/conftest.py`) so every session/thread reads and writes the
+   same real database, matching how SQLite/Postgres actually behave in
+   production. This also means `test_leads_api.py`'s assertions changed
+   from Phase 1 (`status == "pending"`, empty trace) to Phase 3 reality
+   (`status == "done"`, full 4-stage trace) since the pipeline now runs to
+   completion inline during the test's `client.post(...)` call.
+
+Manual end-to-end verification via curl (4 leads: a CMO, a Data Engineer, a
+Principal Software Engineer, and a Marketing Intern) confirmed all reach
+`done` with correct routing, and specifically confirmed the
+Principal-Software-Engineer trace classifies as `technical` under
+`classify_v2` (the pipeline's default) — the exact case classify_v1 gets
+wrong.
 
 ## Phase 4 — Evals
 - [ ] `backend/app/evals/cases/classify_cases.json` — ~20 hand-labeled cases incl. edge cases
